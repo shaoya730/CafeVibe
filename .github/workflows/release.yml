@@ -25,7 +25,14 @@ jobs:
             libsoup-3.0-dev libjavascriptcoregtk-4.1-dev
 
       - run: npm install
-      - run: npm run tauri:build
+      - name: 构建桌面客户端
+        run: |
+          case "${{ runner.os }}" in
+            Linux)   BUNDLES="deb,rpm" ;;
+            macOS)   BUNDLES="dmg" ;;
+            Windows) BUNDLES="msi" ;;
+          esac
+          npm run tauri:build -- --bundles "$BUNDLES"
 
       - uses: actions/upload-artifact@v4
         with:
