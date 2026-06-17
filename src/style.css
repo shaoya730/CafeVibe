@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── 全局 ─── */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ─── 滚动条 ─── */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ─── 自定义 Range 滑块 ─── */
+
+/* 统一清除默认外观 */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  width: 100%;
+}
+
+/* ---- 滑轨（所有浏览器） ---- */
+input[type='range']::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgba(245, 165, 68, 0.25),
+    rgba(245, 165, 68, 0.55)
+  );
+}
+
+input[type='range']::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    rgba(245, 165, 68, 0.25),
+    rgba(245, 165, 68, 0.55)
+  );
+  border: none;
+}
+
+/* ---- 滑块按钮（WebKit） ---- */
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #f5a544;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 8px rgba(245, 165, 68, 0.4);
+  margin-top: -7px;   /* (thumb高度 - 轨道高度) / 2 = 7 */
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 14px rgba(245, 165, 68, 0.6);
+}
+
+/* ---- 滑块按钮（Firefox） ---- */
+input[type='range']::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #f5a544;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 8px rgba(245, 165, 68, 0.4);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type='range']::-moz-range-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 14px rgba(245, 165, 68, 0.6);
+}
+
+/* ---- Focus 态（键盘导航） ---- */
+input[type='range']:focus {
+  outline: none;
+}
+input[type='range']:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgba(245, 165, 68, 0.3), 0 0 14px rgba(245, 165, 68, 0.5);
+}
+input[type='range']:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgba(245, 165, 68, 0.3), 0 0 14px rgba(245, 165, 68, 0.5);
+}
+
+/* ─── 上传区域 ─── */
+
+.upload-zone {
+  transition: border-color 0.25s ease, background-color 0.25s ease;
+}
+
+.upload-zone.drag-over {
+  border-color: #f5a544 !important;
+  background-color: rgba(245, 165, 68, 0.08) !important;
+}
+
+/* ─── 播放按钮呼吸动画 ─── */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(245, 165, 68, 0.15);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(245, 165, 68, 0.3);
+  }
+}
+
+.play-btn-glow {
+  animation: pulse-glow 3s ease-in-out infinite;
+}

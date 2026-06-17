@@ -1,0 +1,25 @@
+{
+  "name": "cafevibe",
+  "private": true,
+  "version": "0.1.0",
+  "description": "多平台氛围感音乐变奏与咖啡馆背景音生成器",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "tauri:dev": "tauri dev",
+    "tauri:build": "tauri build"
+  },
+  "dependencies": {
+    "tone": "^14.7.77"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "vite": "^6.0.7"
+  }
+}

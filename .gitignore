@@ -1,0 +1,15 @@
+node_modules/
+dist/
+server.log
+
+# Rust 构建产物
+src-tauri/target/
+src-tauri/gen/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

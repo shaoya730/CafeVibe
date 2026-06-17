@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CafeVibe — 咖啡馆氛围音</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>" />
+</head>
+<body class="bg-[#1a120e] text-stone-200 font-body min-h-screen flex flex-col">
+
+  <div id="app" class="flex flex-col items-center justify-center flex-1 px-4 py-10 md:py-16">
+
+    <!-- ═══ 标题 ═══ -->
+    <header class="text-center mb-10 md:mb-14 select-none">
+      <h1 class="text-4xl md:text-6xl lg:text-7xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-warm-400 to-warm-200">
+        CafeVibe
+      </h1>
+      <p class="mt-3 text-stone-500 text-base md:text-lg font-light tracking-wide">
+        氛围感音乐变奏 · 咖啡馆背景音生成器
+      </p>
+    </header>
+
+    <!-- ═══ 控制面板 ═══ -->
+    <main class="w-full max-w-lg space-y-5">
+
+      <!-- ─── 上传区域 ─── -->
+      <div
+        id="uploadZone"
+        class="upload-zone relative flex flex-col items-center justify-center gap-2 px-6 py-10 md:py-14 rounded-2xl border-2 border-dashed border-stone-700/60 bg-stone-800/30 text-stone-500 cursor-pointer transition-colors"
+      >
+        <!-- 隐藏的 file input -->
+        <input
+          id="fileInput"
+          type="file"
+          accept="audio/mpeg,audio/wav,audio/ogg,audio/mp3,audio/x-m4a,audio/flac,audio/aac,.mp3,.wav,.ogg,.m4a,.flac"
+          class="hidden"
+        />
+
+        <!-- 默认提示 -->
+        <div id="uploadPlaceholder" class="flex flex-col items-center gap-3">
+          <span class="text-3xl md:text-4xl">📁</span>
+          <p class="text-sm md:text-base font-medium">
+            拖拽音频文件到此处
+          </p>
+          <p class="text-xs text-stone-600">
+            或点击浏览 · 支持 mp3 / wav / ogg
+          </p>
+        </div>
+
+        <!-- 上传后的文件名（隐藏） -->
+        <div id="uploadFileInfo" class="hidden flex-col items-center gap-2">
+          <span class="text-2xl">🎵</span>
+          <p id="fileNameDisplay" class="text-sm md:text-base font-medium text-stone-300 truncate max-w-[240px]"></p>
+          <button
+            id="changeFileBtn"
+            type="button"
+            class="text-xs text-warm-500 hover:text-warm-400 transition-colors underline underline-offset-2"
+          >更换文件</button>
+        </div>
+      </div>
+
+      <!-- ─── 播放控制卡 ═══ -->
+      <div class="rounded-2xl bg-stone-800/40 backdrop-blur-sm border border-stone-700/30 p-6 md:p-8 space-y-7">
+
+        <!-- 曲目信息 -->
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <span id="trackIcon" class="text-lg shrink-0">🎵</span>
+            <span id="trackName" class="text-sm text-stone-400 font-light truncate">未加载曲目</span>
+          </div>
+          <span id="playStatus" class="text-xs text-stone-600 font-mono shrink-0">—</span>
+        </div>
+
+        <!-- 大播放按钮 -->
+        <div class="flex justify-center">
+          <button
+            id="playBtn"
+            type="button"
+            class="play-btn-glow w-20 h-20 md:w-24 md:h-24 rounded-full bg-gradient-to-br from-warm-500 to-warm-600 text-white flex items-center justify-center text-3xl md:text-4xl shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:scale-100 disabled:hover:scale-100"
+            disabled
+          >
+            <span id="playIcon">▶</span>
+          </button>
+        </div>
+
+        <!-- ─── Lofi 浓度滑块 ─── -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between text-xs md:text-sm">
+            <span class="text-stone-400">🎚 Lofi 浓度</span>
+            <span id="lofiValue" class="text-warm-400 font-mono font-medium">0%</span>
+          </div>
+          <input
+            id="lofiSlider"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value="0"
+          />
+          <div class="flex justify-between text-[11px] text-stone-600">
+            <span>干净 · 原声</span>
+            <span>闷糊 · 慵懒</span>
+          </div>
+        </div>
+
+        <!-- ─── 环境白噪音音量 ─── -->
+        <div class="space-y-2.5">
+          <div class="flex items-center justify-between text-xs md:text-sm">
+            <span class="text-stone-400">🌊 环境白噪音</span>
+            <span id="bgVolumeValue" class="text-warm-400 font-mono font-medium">-20 dB</span>
+          </div>
+          <input
+            id="bgVolumeSlider"
+            type="range"
+            min="-50"
+            max="0"
+            step="1"
+            value="-20"
+          />
+          <div class="flex justify-between text-[11px] text-stone-600">
+            <span>静音</span>
+            <span>最大</span>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- ═══ 页脚 ═══ -->
+    <footer class="mt-10 md:mt-14 text-stone-700 text-xs font-light select-none">
+      <p>Powered by Web Audio API <span class="mx-1.5">·</span> Tone.js</p>
+    </footer>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
