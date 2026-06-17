@@ -14,7 +14,6 @@ jobs:
           - ubuntu-24.04
           - macos-latest
           - windows-latest
-          - windows-2025-arm64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
