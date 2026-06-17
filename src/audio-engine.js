@@ -46,6 +46,12 @@ export class AudioEngine {
     /** 程序生成的环境噪音节点合集 */
     this._bgNoiseNodes = null
 
+    // ─── 即兴生成音乐状态 ───
+    /** 是否正在播放生成音乐 */
+    this._isGenerating = false
+    /** 生成音乐的音源/序列引用，用于停止时清理 */
+    this._genNodes = null
+
     /** 是否已初始化 */
     this.initialized = false
   }
@@ -119,27 +125,37 @@ export class AudioEngine {
   async loadMusic(url, options = {}) {
     const { fadeIn = 2 } = options
 
+    // 如果正在播放生成音乐，先停掉
+    this.stopGenerativeMusic()
     // 释放上一次的播放器
     this._disposePlayer()
     this._musicPosition = 0
     this._isPlaying = false
 
-    try {
-      this.player = new Tone.Player({
-        url,
-        loop: false,
-        fadeIn,
-        onload: () => {
-          console.log(`🎶 音乐已加载: ${url}`)
-        },
-      })
+    // 用 Promise 包装，等 onload 触发才返回（确保 buffer 真正就绪）
+    return new Promise((resolve, reject) => {
+      try {
+        this.player = new Tone.Player({
+          url,
+          loop: false,
+          fadeIn,
+          onload: () => {
+            console.log(`🎶 音乐已加载`)
+            resolve()
+          },
+        })
 
-      // 连接到音量节点（后面就是 pitchShift → filter → Destination）
-      this.player.connect(this.volumeNode)
-    } catch (err) {
-      console.error('❌ 加载音乐失败:', err)
-      throw err
-    }
+        // 连接到音量节点（后面就是 pitchShift → filter → Destination）
+        this.player.connect(this.volumeNode)
+
+        // 如果 buffer 同步加载完成了（极少情况），手动 resolve
+        if (this.player.loaded) resolve()
+      } catch (err) {
+        console.error('❌ 加载音乐失败:', err)
+        this._disposePlayer()
+        reject(err)
+      }
+    })
   }
 
   /**
@@ -257,6 +273,148 @@ export class AudioEngine {
   }
 
   // ══════════════════════════════════════════
+  //  即兴音乐生成 — 无文件也能出声
+  // ══════════════════════════════════════════
+
+  /**
+   * 启动一段即兴咖啡馆背景音乐（Tone.js 合成器实时生成）。
+   *
+   * 用内置合成器实时演奏一段舒缓的爵士和弦循环 + 轻 Lo-fi 鼓点，
+   * 走与上传文件相同的效果链（pitchShift → filter），所以
+   * setLofiIntensity() 对生成音乐同样生效。
+   *
+   * 调用后会自动停掉已上传文件的播放。
+   */
+  startGenerativeMusic() {
+    // 停止之前正在生成的音乐
+    this.stopGenerativeMusic()
+    // 停止已上传文件的播放
+    if (this.player) { this.stopMusic() }
+
+    // ─── 参数 ───
+    const bpm = 75
+    Tone.Transport.bpm.value = bpm
+
+    // ─── 和弦进行 (C大调 爵士旅馆经典走向) ───
+    //   Cmaj7 → Am7 → Dm7 → G7
+    // 每和弦持续 2 小节 = 8 拍
+    const progression = [
+      { chords: ['C3', 'E3', 'G3', 'B3'], root: 'C2' },
+      { chords: ['A2', 'C3', 'E3', 'G3'], root: 'A2' },
+      { chords: ['D3', 'F3', 'A3', 'C4'], root: 'D2' },
+      { chords: ['G2', 'B2', 'D3', 'F3'], root: 'G2' },
+    ]
+
+    // ─── ① 和弦垫 (PolySynth) ───
+    const padSynth = new Tone.PolySynth(Tone.FMSynth, {
+      harmonicity: 1.5,
+      modulationIndex: 1.2,
+      carrier: { partials: [1, 0.3, 0.1] },
+      modulation: { partials: [1, 0.2] },
+      volume: -12,
+    }).connect(this.volumeNode)
+
+    // 每个和弦持续 2 小节，循环播放
+    let chordIndex = 0
+    const chordInterval = '2m'
+    const chordEvent = Tone.Transport.scheduleRepeat((time) => {
+      const { chords } = progression[chordIndex % progression.length]
+      padSynth.triggerAttackRelease(chords, '1m', time)
+      chordIndex++
+    }, chordInterval)
+
+    // ─── ② 贝斯根音 (Synth) ───
+    const bassSynth = new Tone.Synth({
+      oscillator: { type: 'triangle' },
+      envelope: { attack: 0.05, decay: 0.3, sustain: 0.2, release: 0.5 },
+      volume: -16,
+    }).connect(this.volumeNode)
+
+    let bassIndex = 0
+    const bassEvent = Tone.Transport.scheduleRepeat((time) => {
+      const { root } = progression[bassIndex % progression.length]
+      // 每个根音弹两个长音
+      bassSynth.triggerAttackRelease(root, '1n', time)
+      bassIndex++
+    }, '2m')
+
+    // ─── ③ 底鼓 (MembraneSynth) ───
+    const kick = new Tone.MembraneSynth({
+      pitchDecay: 0.04,
+      octaves: 4,
+      envelope: { attack: 0.001, decay: 0.3, sustain: 0 },
+      volume: -8,
+    }).connect(this.volumeNode)
+
+    const kickSeq = new Tone.Sequence(
+      (time, beat) => {
+        if (beat % 2 === 0) {
+          kick.triggerAttackRelease('D1', '8n', time)
+        }
+      },
+      [0, 1, 2, 3],  // 4 拍
+      '1n',
+    )
+
+    // ─── ④ 开镲/闭镲 (NoiseSynth) ───
+    const hat = new Tone.NoiseSynth({
+      noise: { type: 'pink' },
+      envelope: { attack: 0.001, decay: 0.05, sustain: 0 },
+      volume: -22,
+    }).connect(this.volumeNode)
+
+    const hatSeq = new Tone.Sequence(
+      (time, step) => {
+        // 8 分音符，step 0-7
+        hat.triggerAttackRelease('16n', time)
+      },
+      [0, 1, 2, 3, 4, 5, 6, 7],
+      '8n',
+    )
+
+    // ─── 启动 ───
+    kickSeq.start(0)
+    hatSeq.start(0)
+    Tone.Transport.start()
+
+    // 保存引用供停止时清理
+    this._genNodes = {
+      padSynth, bassSynth, kick, hat,
+      chordEvent, bassEvent, kickSeq, hatSeq,
+      chordIndex: 0, bassIndex: 0,
+    }
+    this._isGenerating = true
+    console.log(`🎹 即兴音乐生成已启动 (${bpm} BPM · C大调)`)
+  }
+
+  /**
+   * 停止即兴音乐生成，释放合成器/序列。
+   */
+  stopGenerativeMusic() {
+    if (!this._genNodes) return
+
+    const { padSynth, bassSynth, kick, hat, bassEvent, chordEvent, kickSeq, hatSeq } = this._genNodes
+
+    try { chordEvent?.dispose() } catch (_) {}
+    try { bassEvent?.dispose() } catch (_) {}
+    try { kickSeq?.dispose() } catch (_) {}
+    try { hatSeq?.dispose() } catch (_) {}
+    try { padSynth?.dispose() } catch (_) {}
+    try { bassSynth?.dispose() } catch (_) {}
+    try { kick?.dispose() } catch (_) {}
+    try { hat?.dispose() } catch (_) {}
+
+    this._genNodes = null
+    this._isGenerating = false
+    console.log('⏹ 即兴音乐生成已停止')
+  }
+
+  /** 当前是否正在播放即兴生成音乐 */
+  get isGenerating() {
+    return this._isGenerating
+  }
+
+  // ══════════════════════════════════════════
   //  核心调节函数
   // ══════════════════════════════════════════
 
@@ -347,6 +505,7 @@ export class AudioEngine {
    * 调用后该实例不再可用，需要重新 new。
    */
   dispose() {
+    this.stopGenerativeMusic()
     this._disposePlayer()
     this._disposeBgNoise()
     if (this.bgPlayer) {

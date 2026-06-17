@@ -32,7 +32,7 @@
       <!-- ─── 上传区域 ─── -->
       <div
         id="uploadZone"
-        class="upload-zone relative flex flex-col items-center justify-center gap-2 px-6 py-10 md:py-14 rounded-2xl border-2 border-dashed border-stone-700/60 bg-stone-800/30 text-stone-500 cursor-pointer transition-colors"
+        class="upload-zone relative flex flex-col items-center justify-center gap-2 px-6 py-8 md:py-10 rounded-2xl border-2 border-dashed border-stone-700/60 bg-stone-800/30 text-stone-500 cursor-pointer transition-colors"
       >
         <!-- 隐藏的 file input -->
         <input
@@ -64,6 +64,18 @@
           >更换文件</button>
         </div>
       </div>
+
+      <!-- ─── 即兴音乐生成按钮 ─── -->
+      <button
+        id="generateBtn"
+        type="button"
+        class="w-full py-3.5 rounded-2xl border border-dashed border-warm-600/40 bg-warm-600/5 text-warm-400
+               font-medium text-sm tracking-wide
+               hover:bg-warm-600/10 hover:border-warm-500/60
+               active:scale-[0.98] transition-all duration-200"
+      >
+        <span id="genBtnText">🎹 即兴生成咖啡馆音乐</span>
+      </button>
 
       <!-- ─── 播放控制卡 ═══ -->
       <div class="rounded-2xl bg-stone-800/40 backdrop-blur-sm border border-stone-700/30 p-6 md:p-8 space-y-7">

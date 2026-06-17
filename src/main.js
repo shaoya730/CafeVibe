@@ -44,6 +44,9 @@ const lofiValue   = $('#lofiValue')
 const bgSlider    = $('#bgVolumeSlider')
 const bgValue     = $('#bgVolumeValue')
 
+const generateBtn    = $('#generateBtn')
+const genBtnText     = $('#genBtnText')
+
 // ══════════════════════════════════════════
 //  引擎初始化（用户首次点击页面任意处触发）
 // ══════════════════════════════════════════
@@ -94,13 +97,30 @@ async function handleFile(file) {
   uploadPlaceholder.classList.add('hidden')
   uploadFileInfo.classList.remove('hidden')
 
+  // 如果正在生成音乐，重置生成按钮状态
+  if (engine.isGenerating) {
+    engine.stopGenerativeMusic()
+    genBtnText.textContent = '🎹 即兴生成咖啡馆音乐'
+    generateBtn.classList.remove('border-warm-500/60', 'bg-warm-600/15')
+  }
+
   // 更新曲目信息
   trackName.textContent = file.name
   trackIcon.textContent = '🎵'
 
   // 创建 blob URL 并加载到引擎
   const blobUrl = URL.createObjectURL(file)
-  await engine.loadMusic(blobUrl, { fadeIn: 2 })
+  try {
+    await engine.loadMusic(blobUrl, { fadeIn: 2 })
+  } catch (err) {
+    alert('⚠️ 音频文件加载失败，请检查文件是否损坏或格式不兼容')
+    console.error('❌ 音频加载失败:', err)
+    // 回退上传区状态
+    uploadPlaceholder.classList.remove('hidden')
+    uploadFileInfo.classList.add('hidden')
+    trackName.textContent = '未加载曲目'
+    return
+  }
 
   // 自动播放
   engine.play()
@@ -168,6 +188,42 @@ function updatePlayUI(playing) {
   playIcon.textContent = playing ? '⏸' : '▶'
   playBtn.classList.toggle('play-btn-glow', playing)
 }
+
+// ══════════════════════════════════════════
+//  即兴音乐生成
+// ══════════════════════════════════════════
+
+generateBtn.addEventListener('click', async () => {
+  await ensureInit()
+
+  if (engine.isGenerating) {
+    engine.stopGenerativeMusic()
+    genBtnText.textContent = '🎹 即兴生成咖啡馆音乐'
+    generateBtn.classList.remove('border-warm-500/60', 'bg-warm-600/15')
+    // 上传区交互不受影响
+    trackName.textContent = '未加载曲目'
+    trackIcon.textContent = '🎵'
+    playStatus.textContent = '—'
+    playBtn.disabled = true
+    updatePlayUI(false)
+
+    // 如果有上传文件的信息显示，切回上传提示
+    if (!uploadFileInfo.classList.contains('hidden')) {
+      uploadPlaceholder.classList.remove('hidden')
+      uploadFileInfo.classList.add('hidden')
+    }
+  } else {
+    engine.startGenerativeMusic()
+    genBtnText.textContent = '⏹ 停止生成音乐'
+    generateBtn.classList.add('border-warm-500/60', 'bg-warm-600/15')
+
+    trackName.textContent = '🎹 即兴生成 · Café Jazz'
+    trackIcon.textContent = '🎶'
+    playStatus.textContent = '▶ 生成中'
+    playBtn.disabled = false
+    updatePlayUI(true)
+  }
+})
 
 // ══════════════════════════════════════════
 //  Lofi 浓度滑块
