@@ -30,6 +30,7 @@ jobs:
 
       - run: npm install
       - name: 构建桌面客户端
+        shell: bash
         run: |
           case "${{ runner.os }}" in
             Linux)   BUNDLES="deb,rpm" ;;
